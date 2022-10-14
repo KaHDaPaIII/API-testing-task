@@ -1,3 +1,4 @@
 node_modules
 mockApi/db_stage.yaml
 testResults/
+newman/
