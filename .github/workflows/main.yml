@@ -15,6 +15,7 @@ jobs:
         run: newman run petstore.collection.json -r htmlextra --reporter-htmlextra-export ./testResults/index.html --reporter-htmlextra-darkTheme
 
       - name: Deploy results to GH Pages
+        if: always()
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
