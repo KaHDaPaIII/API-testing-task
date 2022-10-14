@@ -13,12 +13,8 @@ jobs:
 
       - name: Run POSTMAN collection
         run: newman run petstore.collection.json -r htmlextra --reporter-htmlextra-export ./testResults/index.html --reporter-htmlextra-darkTheme
-      - name: Check for testResults folder
-        if: always()
-        run: ls
 
       - name: Deploy results to GH Pages
-        if: always()
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: testResults
+          folder: testResults/index.html
