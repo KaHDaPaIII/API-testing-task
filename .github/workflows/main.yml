@@ -1,40 +1,20 @@
-name: Test-Build
-on:
-  push:
-    branches:
-      - main
+name: Run POSTMAN collection and deploy results to GH Pages
+on: [push]
 jobs:
   test-api:
     runs-on: ubuntu-latest
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-
-      # INstall Node on the runner
-      - name: Install Node
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: "12.x"
+          node-version: 16
+      - run: npm ci
+      - run: npm install -g newman newman-reporter-htmlextra
 
-
-      # Install the newman command line utility and also install the html extra reporter
-      - name: Install newman
-        run: |
-          npm install -g newman
-          npm install -g newman-reporter-htmlextra
-
-
-      # Make directory to upload the test results
-      - name: Make Directory for results
-        run: mkdir -p testResults
-
-      # Run the POSTMAN collection
       - name: Run POSTMAN collection
-        run: |
-          newman run petstore.collection.json -r htmlextra --reporter-htmlextra-export testResults/htmlreport.html --reporter-htmlextra-darkTheme  > testResults/runreport1.html
+        run: newman run petstore.collection.json -r htmlextra --reporter-htmlextra-export testResults/index.html --reporter-htmlextra-darkTheme
 
-      - name: Deploy 🚀
+      - name: Deploy results to GH Pages
         if: always()
         uses: JamesIves/github-pages-deploy-action@v4
         with:
