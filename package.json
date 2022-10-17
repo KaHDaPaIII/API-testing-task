@@ -3,12 +3,21 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "turn-on-api": "cp mockApi/db_back_up.yaml mockApi/db_stage.yaml && npx yaml-server --hotReload=off --autoStart=off --port 3000 --database ./mockApi/db_stage.yaml"
+    "turn-on-api": "npx copyfiles 'mockApi/db_back_up.yaml' 'mockApi/db_stage.yaml' && npx yaml-server --hotReload=off --autoStart=off --port 3000 --database ./mockApi/db_stage.yaml",
+    "tests": "npx newman run store.collection.json -r htmlextra --reporter-htmlextra-export ./report/index.html"
   },
-  "keywords": ["api","mock","yaml-server","rest"],
+  "keywords": [
+    "api",
+    "mock",
+    "yaml-server",
+    "rest"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "copyfiles": "^2.4.1",
+    "newman": "^5.3.2",
+    "newman-reporter-htmlextra": "^1.22.11",
     "yaml-server": "^1.10.0"
   }
 }
