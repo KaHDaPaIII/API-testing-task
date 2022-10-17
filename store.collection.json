@@ -104,6 +104,48 @@
 					"response": []
 				},
 				{
+					"name": "Remove bad product after bad request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.sendRequest(pm.collectionVariables.get(\"baseUrl\") + \"/products\", (error, response) => {\r",
+									"    //Assume that our bad item is still the last one.\r",
+									"    let data = response.json();\r",
+									"    pm.variables.set(\"testBadItemID\", data[data.length - 1].id);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/{{testBadItemID}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"{{testBadItemID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "List products",
 					"event": [
 						{
@@ -209,6 +251,9 @@
 									"pm.test(\"Response schema validation\", () => {\r",
 									"    const schema = pm.collectionVariables.get(\"productsListSchema\");\r",
 									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});\r",
+									"pm.test(\"Check the respnose page size\", () => {\r",
+									"    pm.expect(pm.response.json().length).to.equal(parseInt(pm.collectionVariables.get(\"testPageSize\")));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -219,7 +264,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/products?page={{testedPage}}&pageSize={{testedPageSize}}",
+							"raw": "{{baseUrl}}/products?page={{testPage}}&pageSize={{testPageSize}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -229,11 +274,11 @@
 							"query": [
 								{
 									"key": "page",
-									"value": "{{testedPage}}"
+									"value": "{{testPage}}"
 								},
 								{
 									"key": "pageSize",
-									"value": "{{testedPageSize}}"
+									"value": "{{testPageSize}}"
 								}
 							]
 						}
@@ -310,6 +355,16 @@
 									"pm.test(\"Response schema validation\", () => {\r",
 									"    const schema = pm.collectionVariables.get(\"productsListSchema\");\r",
 									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});\r",
+									"pm.test(\"Check the respnose sorting\", () => {\r",
+									"    let data = pm.response.json();\r",
+									"    let sortKey = pm.collectionVariables.get(\"testProductsSortKey\");\r",
+									"    if(data.length > 1){\r",
+									"        for(let i = 1; i < data.length; i++){\r",
+									"            console.log(data[i][sortKey], data[i-1][sortKey]);\r",
+									"            pm.expect(data[i][sortKey] <= data[i-1][sortKey]).to.be.true;\r",
+									"        }\r",
+									"    }\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -759,6 +814,52 @@
 					"response": []
 				},
 				{
+					"name": "Remove bad product after bad request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.sendRequest(pm.collectionVariables.get(\"baseUrl\") + \"/orders\", (error, response) => {\r",
+									"    //Assume that our bad item is still the last one.\r",
+									"    let data = response.json();\r",
+									"    pm.variables.set(\"testBadItemID\", data[data.length - 1].id);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "file",
+							"file": {}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{testBadItemID}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{testBadItemID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "List orders",
 					"event": [
 						{
@@ -858,6 +959,9 @@
 									"pm.test(\"Response schema validation\", () => {\r",
 									"    const schema = pm.collectionVariables.get(\"ordersListSchema\");\r",
 									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});\r",
+									"pm.test(\"Check the respnose page size\", () => {\r",
+									"    pm.expect(pm.response.json().length).to.equal(parseInt(pm.collectionVariables.get(\"testPageSize\")));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -959,6 +1063,15 @@
 									"pm.test(\"Response schema validation\", () => {\r",
 									"    const schema = pm.collectionVariables.get(\"ordersListSchema\");\r",
 									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});\r",
+									"pm.test(\"Check the respnose sorting\", () => {\r",
+									"    let data = pm.response.json();\r",
+									"    let sortKey = pm.collectionVariables.get(\"testOrdersSortKey\");\r",
+									"    if(data.length > 1){\r",
+									"        for(let i = 1; i < data.length; i++){\r",
+									"            pm.expect(data[i][sortKey] >= data[i-1][sortKey]).to.be.true;\r",
+									"        }\r",
+									"    }\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -1390,6 +1503,52 @@
 					"response": []
 				},
 				{
+					"name": "Remove bad product after bad request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.sendRequest(pm.collectionVariables.get(\"baseUrl\") + \"/users\", (error, response) => {\r",
+									"    //Assume that our bad item is still the last one.\r",
+									"    let data = response.json();\r",
+									"    pm.variables.set(\"testBadItemID\", data[data.length - 1].id);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "file",
+							"file": {}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/{{testBadItemID}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"{{testBadItemID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "List users",
 					"event": [
 						{
@@ -1489,6 +1648,9 @@
 									"pm.test(\"Response schema validation\", () => {\r",
 									"    const schema = pm.collectionVariables.get(\"usersListSchema\");\r",
 									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});\r",
+									"pm.test(\"Check the respnose page size\", () => {\r",
+									"    pm.expect(pm.response.json().length).to.equal(parseInt(pm.collectionVariables.get(\"testPageSize\")));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -1590,7 +1752,16 @@
 									"pm.test(\"Response schema validation\", () => {\r",
 									"    const schema = pm.collectionVariables.get(\"usersListSchema\");\r",
 									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
-									"});"
+									"});\r",
+									"pm.test(\"Check the respnose sorting\", () => {\r",
+									"    let data = pm.response.json();\r",
+									"    let sortKey = pm.collectionVariables.get(\"testUsersSortKey\");\r",
+									"    if(data.length > 1){\r",
+									"        for(let i = 1; i < data.length; i++){\r",
+									"            pm.expect(data[i][sortKey] >= data[i-1][sortKey]).to.be.true;\r",
+									"        }\r",
+									"    }\r",
+									"});;"
 								],
 								"type": "text/javascript"
 							}
