@@ -20,10 +20,18 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 201\", function () {\r",
-									"  pm.response.to.have.status(201);\r",
+									"    pm.response.to.have.status(201);\r",
 									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"productSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});\r",
+									"\r",
 									"let jsonData = JSON.parse(responseBody);\r",
-									"pm.environment.set(\"testedProductID\", jsonData.id);"
+									"pm.collectionVariables.set(\"testedProductID\", jsonData.id);"
 								],
 								"type": "text/javascript"
 							}
@@ -35,6 +43,48 @@
 						"body": {
 							"mode": "raw",
 							"raw": "{\r\n    \"name\": \"orange\",\r\n    \"price\": 8,\r\n    \"sku\": 123321123,\r\n    \"description\": \"wouh\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create product / Bad request (invalid body)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"orange\",\r\n    \"sku\": 123321123,\r\n    \"description\": \"wouh\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -68,12 +118,19 @@
 									"});\r",
 									"pm.test(\"Content-Type is present\", function () {\r",
 									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"productsListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
 					],
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -84,6 +141,50 @@
 							],
 							"path": [
 								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List products / Not found (invalid request URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot GET /product\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot GET /product\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/product",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"product"
 							]
 						}
 					},
@@ -104,6 +205,10 @@
 									"});\r",
 									"pm.test(\"Content-Type is present\", function () {\r",
 									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"productsListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -114,7 +219,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/products?page=1&pageSize=2",
+							"raw": "{{baseUrl}}/products?page={{testedPage}}&pageSize={{testedPageSize}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -124,11 +229,155 @@
 							"query": [
 								{
 									"key": "page",
-									"value": "1"
+									"value": "{{testedPage}}"
 								},
 								{
 									"key": "pageSize",
-									"value": "2"
+									"value": "{{testedPageSize}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List products - pagination / Not found (invalid  request URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot GET /product\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot GET /product\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/product?page={{testedPage}}&pageSize={{testedPageSize}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"product"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{testedPage}}"
+								},
+								{
+									"key": "pageSize",
+									"value": "{{testedPageSize}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List products - sorting",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"productsListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products?sortOrder=DESC&sortKey={{testProductsSortKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "sortOrder",
+									"value": "DESC"
+								},
+								{
+									"key": "sortKey",
+									"value": "{{testProductsSortKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List products - sorting / Bad request (invalid sort key)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products?sortOrder=DESC&sortKey={{testProductsInvalidSortKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "sortOrder",
+									"value": "DESC"
+								},
+								{
+									"key": "sortKey",
+									"value": "{{testProductsInvalidSortKey}}"
 								}
 							]
 						}
@@ -146,13 +395,23 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"productSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
 							}
 						}
 					],
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -170,6 +429,43 @@
 					"response": []
 				},
 				{
+					"name": "Get product by ID / Not Found (invalid ID)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/{{testInvalidID}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"{{testInvalidID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update product",
 					"event": [
 						{
@@ -180,7 +476,14 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"productSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -212,6 +515,48 @@
 					"response": []
 				},
 				{
+					"name": "Update product / Not Found (invalid ID)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": {{testInvalidID}},\r\n    \"name\": \"banana\",\r\n    \"price\": 155,\r\n    \"sku\": 123321123,\r\n    \"description\": \"changed description\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Remove product by ID",
 					"event": [
 						{
@@ -222,7 +567,14 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"productSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -244,6 +596,68 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Remove product by ID / Not found (invalid request URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot DELETE /product/\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot DELETE /product/\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/product/{{testedProductID}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"product",
+								"{{testedProductID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
 				}
 			]
 		},
@@ -261,10 +675,18 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 201\", function () {\r",
-									"  pm.response.to.have.status(201);\r",
+									"    pm.response.to.have.status(201);\r",
 									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"orderSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});\r",
+									"\r",
 									"let jsonData = JSON.parse(responseBody);\r",
-									"pm.environment.set(\"testedOrderID\", jsonData.id);"
+									"pm.collectionVariables.set(\"testedOrderID\", jsonData.id);"
 								],
 								"type": "text/javascript"
 							}
@@ -295,6 +717,48 @@
 					"response": []
 				},
 				{
+					"name": "Create order / Bad request (invalid body)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"order5\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "List orders",
 					"event": [
 						{
@@ -305,7 +769,14 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"ordersListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -328,7 +799,7 @@
 					"response": []
 				},
 				{
-					"name": "List orders - pagination",
+					"name": "List orders / Not found (invalid request URL)",
 					"event": [
 						{
 							"listen": "test",
@@ -337,8 +808,16 @@
 									"pm.test(\"Response time is less than 200ms\", function () {\r",
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
-									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot GET /order\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot GET /order\");\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -349,7 +828,47 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/orders?page=1&pageSize=2",
+							"raw": "{{baseUrl}}/order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"order"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List orders - pagination",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"ordersListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders?page={{testPage}}&pageSize={{testPageSize}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -359,11 +878,155 @@
 							"query": [
 								{
 									"key": "page",
-									"value": "1"
+									"value": "{{testPage}}"
 								},
 								{
 									"key": "pageSize",
-									"value": "2"
+									"value": "{{testPageSize}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List orders - pagination / Not found (invalid request URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot GET /order\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot GET /order\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/order?page={{testPage}}&pageSize={{testPageSize}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"order"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{testPage}}"
+								},
+								{
+									"key": "pageSize",
+									"value": "{{testPageSize}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List orders - sorting",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"ordersListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders?sortOrder=ASC&sortKey={{testOrdersSortKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							],
+							"query": [
+								{
+									"key": "sortOrder",
+									"value": "ASC"
+								},
+								{
+									"key": "sortKey",
+									"value": "{{testOrdersSortKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List orders - sorting / Bad request (invalid sort key)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders?sortOrder=ASC&sortKey={{testOrdersInvalidSortKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							],
+							"query": [
+								{
+									"key": "sortOrder",
+									"value": "ASC"
+								},
+								{
+									"key": "sortKey",
+									"value": "{{testOrdersInvalidSortKey}}"
 								}
 							]
 						}
@@ -381,7 +1044,14 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"orderSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -405,6 +1075,40 @@
 					"response": []
 				},
 				{
+					"name": "Get order by ID / Not Found (invalid ID)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{testInvalidID}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{testInvalidID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update order",
 					"event": [
 						{
@@ -415,7 +1119,14 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"orderSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -447,6 +1158,48 @@
 					"response": []
 				},
 				{
+					"name": "Update order / Not Found (invalid ID)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": {{testInvalidID}},\r\n    \"name\": \"order5\",\r\n    \"sku\": 123425445656765\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Remove order by ID",
 					"event": [
 						{
@@ -457,7 +1210,14 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"orderSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -483,6 +1243,52 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Remove order by ID / Not found (invalid request URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot DELETE /order/\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot DELETE /order/\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "file",
+							"file": {}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/order/{{testedOrderID}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"order",
+								"{{testedOrderID}}"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -500,10 +1306,18 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 201\", function () {\r",
-									"  pm.response.to.have.status(201);\r",
+									"    pm.response.to.have.status(201);\r",
 									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"userSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});\r",
+									"\r",
 									"let jsonData = JSON.parse(responseBody);\r",
-									"pm.environment.set(\"testedUserID\", jsonData.id);"
+									"pm.collectionVariables.set(\"testedUserID\", jsonData.id);"
 								],
 								"type": "text/javascript"
 							}
@@ -534,6 +1348,323 @@
 					"response": []
 				},
 				{
+					"name": "Create user / Bad request (invalid body)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"Dream\",\r\n    \"lastName\": \"Real\",\r\n    \"dateOfBirth\": \"2001-10-99\",\r\n    \"emailVerified\": true,\r\n    \"signUpDate\": \"2019-08-24\",\r\n    \"status\": \"active\",\r\n    \"level\": \"lord\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"usersListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List users / Not found (invalid request URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot GET /user\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot GET /user\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List users - pagination",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"usersListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users?page={{testPage}}&pageSize={{testPageSize}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{testPage}}"
+								},
+								{
+									"key": "pageSize",
+									"value": "{{testPageSize}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List users - pagination / Not found (invalid request URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot GET /user\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot GET /user\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user?page={{testPage}}&pageSize={{testPageSize}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{testPage}}"
+								},
+								{
+									"key": "pageSize",
+									"value": "{{testPageSize}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List users - sorting",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"usersListSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users?sortOrder=ASC&sortKey={{testUsersSortKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "sortOrder",
+									"value": "ASC"
+								},
+								{
+									"key": "sortKey",
+									"value": "{{testUsersSortKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List users - sorting / Bad request (invalid sort key)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users?sortOrder=ASC&sortKey={{testUsersInvalidSortKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "sortOrder",
+									"value": "ASC"
+								},
+								{
+									"key": "sortKey",
+									"value": "{{testUsersInvalidSortKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get user by ID",
 					"event": [
 						{
@@ -544,7 +1675,14 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"userSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -568,7 +1706,7 @@
 					"response": []
 				},
 				{
-					"name": "List users",
+					"name": "Get user by ID / Not Found (invalid ID)",
 					"event": [
 						{
 							"listen": "test",
@@ -577,8 +1715,8 @@
 									"pm.test(\"Response time is less than 200ms\", function () {\r",
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
-									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -589,55 +1727,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/users",
+							"raw": "{{baseUrl}}/users/{{testInvalidID}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"users"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "List users - pagination",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Response time is less than 200ms\", function () {\r",
-									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
-									"});\r",
-									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/users?page=1&pageSize=2",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"users"
-							],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "pageSize",
-									"value": "2"
-								}
+								"users",
+								"{{testInvalidID}}"
 							]
 						}
 					},
@@ -654,7 +1750,14 @@
 									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
 									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"userSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -686,14 +1789,66 @@
 					"response": []
 				},
 				{
+					"name": "Update user / Not Found (invalid ID)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"Ilon\",\r\n    \"lastName\": \"Mask\",\r\n    \"email\": \"ilon.mask@gmail.com\",\r\n    \"dateOfBirth\": \"2001-10-99\",\r\n    \"emailVerified\": true,\r\n    \"signUpDate\": \"2019-08-24\",\r\n    \"status\": \"active\",\r\n    \"level\": \"lord\",\r\n    \"id\": {{testInvalidID}}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Remove user by ID",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
 									"pm.test(\"Status code is 200\", function () {\r",
-									"  pm.response.to.have.status(200);\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
+									"});\r",
+									"pm.test(\"Response schema validation\", () => {\r",
+									"    const schema = pm.collectionVariables.get(\"userSchema\");\r",
+									"    pm.response.to.have.jsonSchema(JSON.parse(schema));\r",
 									"});"
 								],
 								"type": "text/javascript"
@@ -715,6 +1870,48 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Remove user by ID / Not found (invalid request URL)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"pm.test(\"Status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"const $ = cheerio.load(pm.response.text())\r",
+									"pm.test('The \"Error\" text is in the title', function () {\r",
+									"    pm.expect($('title').text()).to.include(\"Error\");\r",
+									"});\r",
+									"pm.test('The \"Cannot DELETE /user/\" text is in the body', function () {\r",
+									"    pm.expect($('body').text()).to.include(\"Cannot DELETE /user/\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/{{testedUserID}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user",
+								"{{testedUserID}}"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}
@@ -725,7 +1922,213 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					""
+					"//Set response schemas to collection variables",
+					"",
+					"const productSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"name\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"price\": {",
+					"        \"type\": \"integer\"",
+					"        },",
+					"        \"sku\": {",
+					"        \"type\": \"integer\"",
+					"        },",
+					"        \"description\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"id\": {",
+					"        \"type\": \"integer\"",
+					"        }",
+					"    },",
+					"    \"required\": [",
+					"        \"name\",",
+					"        \"price\",",
+					"        \"sku\",",
+					"        \"description\",",
+					"        \"id\"",
+					"    ]",
+					"};",
+					"",
+					"const productsListSchema = {",
+					"    \"type\": \"array\",",
+					"    \"items\": [",
+					"        {",
+					"        \"type\": \"object\",",
+					"        \"properties\": {",
+					"            \"id\": {",
+					"            \"type\": \"integer\"",
+					"            },",
+					"            \"name\": {",
+					"            \"type\": \"string\"",
+					"            },",
+					"            \"price\": {",
+					"            \"type\": \"integer\"",
+					"            },",
+					"            \"sku\": {",
+					"            \"type\": \"integer\"",
+					"            },",
+					"            \"description\": {",
+					"            \"type\": \"string\"",
+					"            }",
+					"        },",
+					"        \"required\": [",
+					"            \"id\",",
+					"            \"name\",",
+					"            \"price\",",
+					"            \"sku\",",
+					"            \"description\"",
+					"        ]",
+					"        }",
+					"    ]",
+					"};",
+					"",
+					"const orderSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"name\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"sku\": {",
+					"        \"type\": \"integer\"",
+					"        },",
+					"        \"id\": {",
+					"        \"type\": \"integer\"",
+					"        }",
+					"    },",
+					"    \"required\": [",
+					"        \"name\",",
+					"        \"sku\",",
+					"        \"id\"",
+					"    ]",
+					"}",
+					"",
+					"const ordersListSchema = {",
+					"    \"type\": \"array\",",
+					"    \"items\": [",
+					"        {",
+					"        \"type\": \"object\",",
+					"        \"properties\": {",
+					"            \"id\": {",
+					"            \"type\": \"integer\"",
+					"            },",
+					"            \"name\": {",
+					"            \"type\": \"string\"",
+					"            },",
+					"            \"sku\": {",
+					"            \"type\": \"integer\"",
+					"            }",
+					"        },",
+					"        \"required\": [",
+					"            \"id\",",
+					"            \"name\",",
+					"            \"sku\"",
+					"        ]",
+					"        }",
+					"    ]",
+					"}",
+					"",
+					"const userSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"firstName\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"lastName\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"email\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"dateOfBirth\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"emailVerified\": {",
+					"        \"type\": \"boolean\"",
+					"        },",
+					"        \"signUpDate\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"status\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"level\": {",
+					"        \"type\": \"string\"",
+					"        },",
+					"        \"id\": {",
+					"        \"type\": \"integer\"",
+					"        }",
+					"    },",
+					"    \"required\": [",
+					"        \"firstName\",",
+					"        \"lastName\",",
+					"        \"email\",",
+					"        \"dateOfBirth\",",
+					"        \"emailVerified\",",
+					"        \"signUpDate\",",
+					"        \"status\",",
+					"        \"level\",",
+					"        \"id\"",
+					"    ]",
+					"}",
+					"",
+					"const userListSchema = {",
+					"    \"type\": \"array\",",
+					"    \"items\": [",
+					"        {",
+					"        \"type\": \"object\",",
+					"        \"properties\": {",
+					"            \"id\": {",
+					"            \"type\": \"integer\"",
+					"            },",
+					"            \"firstName\": {",
+					"            \"type\": \"string\"",
+					"            },",
+					"            \"lastName\": {",
+					"            \"type\": \"string\"",
+					"            },",
+					"            \"email\": {",
+					"            \"type\": \"string\"",
+					"            },",
+					"            \"dateOfBirth\": {",
+					"            \"type\": \"string\"",
+					"            },",
+					"            \"emailVerified\": {",
+					"            \"type\": \"boolean\"",
+					"            },",
+					"            \"signUpDate\": {",
+					"            \"type\": \"string\"",
+					"            },",
+					"            \"status\": {",
+					"            \"type\": \"string\"",
+					"            },",
+					"            \"level\": {",
+					"            \"type\": \"string\"",
+					"            }",
+					"        },",
+					"        \"required\": [",
+					"            \"id\",",
+					"            \"firstName\",",
+					"            \"lastName\",",
+					"            \"email\",",
+					"            \"dateOfBirth\",",
+					"            \"emailVerified\",",
+					"            \"signUpDate\",",
+					"            \"status\",",
+					"            \"level\"",
+					"        ]",
+					"        }",
+					"    ]",
+					"}",
+					"",
+					"pm.collectionVariables.set(\"productSchema\", JSON.stringify(productSchema));",
+					"pm.collectionVariables.set(\"productsListSchema\", JSON.stringify(productsListSchema));",
+					"pm.collectionVariables.set(\"orderSchema\", JSON.stringify(orderSchema));",
+					"pm.collectionVariables.set(\"ordersListSchema\", JSON.stringify(ordersListSchema));",
+					"pm.collectionVariables.set(\"userSchema\", JSON.stringify(userSchema));",
+					"pm.collectionVariables.set(\"usersListSchema\", JSON.stringify(userListSchema));"
 				]
 			}
 		},
@@ -743,6 +2146,87 @@
 		{
 			"key": "baseUrl",
 			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "productsListSchema",
+			"value": ""
+		},
+		{
+			"key": "productSchema",
+			"value": ""
+		},
+		{
+			"key": "orderSchema",
+			"value": ""
+		},
+		{
+			"key": "ordersListSchema",
+			"value": ""
+		},
+		{
+			"key": "userSchema",
+			"value": ""
+		},
+		{
+			"key": "usersListSchema",
+			"value": ""
+		},
+		{
+			"key": "testedProductID",
+			"value": ""
+		},
+		{
+			"key": "testedOrderID",
+			"value": ""
+		},
+		{
+			"key": "testedUserID",
+			"value": ""
+		},
+		{
+			"key": "testPageSize",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "testPage",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "testProductsSortKey",
+			"value": "price",
+			"type": "string"
+		},
+		{
+			"key": "testProductsInvalidSortKey",
+			"value": "value",
+			"type": "string"
+		},
+		{
+			"key": "testOrdersSortKey",
+			"value": "sku",
+			"type": "string"
+		},
+		{
+			"key": "testOrdersInvalidSortKey",
+			"value": "suk",
+			"type": "string"
+		},
+		{
+			"key": "testUsersSortKey",
+			"value": "firstName",
+			"type": "string"
+		},
+		{
+			"key": "testUsersInvalidSortKey",
+			"value": "nickName",
+			"type": "string"
+		},
+		{
+			"key": "testInvalidID",
+			"value": "0",
 			"type": "string"
 		}
 	]
